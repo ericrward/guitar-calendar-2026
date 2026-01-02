@@ -33,13 +33,10 @@
     </div>
   </div>
 
-  <div id="setup-message" class="hidden max-w-xl mx-auto mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-slate-700">
-  </div>
-
   <script>
     // ========== CONFIGURATION ==========
     const API_KEY = '$2a$10$eHztB0M4YWCkHR5yp/Mo6OrZPSXuZYN/MiBLwU1ePbl0HITyWY3sC';
-    const BIN_ID = ''; // Leave empty on first run - will be filled in after setup
+    const BIN_ID = '695852f7ae596e708fc0fa5b';
     // ===================================
 
     const months = [
@@ -73,56 +70,15 @@
       return 'bg-gray-100 hover:bg-gray-200 text-gray-700';
     }
 
-    async function createBin() {
-      const response = await fetch('https://api.jsonbin.io/v3/b', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': API_KEY,
-          'X-Bin-Name': 'calendar-2026'
-        },
-        body: JSON.stringify({})
-      });
-      const data = await response.json();
-      return data.metadata.id;
-    }
-
     async function loadData() {
-      if (!BIN_ID) {
-        // First time setup - create a new bin
-        setStatus('Setting up...', 'bg-yellow-200 text-yellow-800');
-        try {
-          const newBinId = await createBin();
-          const msg = document.getElementById('setup-message');
-          msg.classList.remove('hidden');
-          msg.innerHTML = `
-            <p class="font-bold text-yellow-800 mb-2">⚠️ One more step to finish setup!</p>
-            <p class="mb-2">Your data bin has been created. To complete setup:</p>
-            <ol class="list-decimal list-inside space-y-1 mb-3">
-              <li>Go to your GitHub repository</li>
-              <li>Click on <strong>index.html</strong> to open it</li>
-              <li>Click the <strong>pencil icon</strong> (Edit this file)</li>
-              <li>Find the line that says <code class="bg-yellow-100 px-1">const BIN_ID = '';</code></li>
-              <li>Change it to: <code class="bg-yellow-100 px-1">const BIN_ID = '${newBinId}';</code></li>
-              <li>Click <strong>"Commit changes"</strong></li>
-              <li>Wait 1-2 minutes, then refresh this page</li>
-            </ol>
-            <p class="text-xs text-slate-500">Your Bin ID: <code class="select-all bg-yellow-100 px-1">${newBinId}</code></p>
-          `;
-          setStatus('Setup needed', 'bg-yellow-200 text-yellow-800');
-        } catch (err) {
-          setStatus('Setup error', 'bg-red-200 text-red-800');
-          console.error(err);
-        }
-        return;
-      }
-
       try {
         const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
           headers: { 'X-Master-Key': API_KEY }
         });
         const data = await response.json();
         dayColors = data.record || {};
+        // Remove the init key if present
+        delete dayColors.init;
         setStatus('Synced ✓', 'bg-green-200 text-green-800');
         refreshAllButtons();
       } catch (err) {
@@ -132,7 +88,6 @@
     }
 
     async function saveData() {
-      if (!BIN_ID) return;
       setStatus('Saving...', 'bg-blue-200 text-blue-800');
       try {
         await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
